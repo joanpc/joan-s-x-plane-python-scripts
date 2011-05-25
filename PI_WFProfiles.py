@@ -1,7 +1,8 @@
 '''
-Weight And fuel Profiles
+Weight & Fuel: Profiles and Set by numbers
 
-Allows storing the current Weight and Fuel in profiles.
+Allows storing the current Weight and Fuel in profiles and provides 
+a dialog for setting W&F by numbers (no imprecise sliders) 
 
 Can be easily modified to story any kind of dataref into profiles.
 
@@ -34,13 +35,21 @@ from os import path
 import cPickle
 
 # False constants
-VERSION='0.1'
+VERSION='0.2'
 PRESETS_FILE='WFprofiles.wfp'
 HELP_CAPTION='Profile name: '
+
+# Conversion rates
+LB2KG=0.45359237
+KG2LB=2.20462262
+
+# Uncomment the following line switch to the great metric system.
+#LB2KG, KG2LB = 1,1
+
 #
 # Datarefs to store 
 #
-# Modify the following dict to store other datarefs in your profiles
+# Modify the following dict to add more datarefs to store in your profiles
 #
 DATAREFS = {
             'Payload':      'sim/flightmodel/weight/m_fixed',
@@ -59,7 +68,7 @@ class PythonInterface:
         self.presets = []
         self.presetFile = False
         
-        self.window = False
+        self.window, self.fuelWindow = False, False
         
         self.Mmenu = self.mainMenuCB
         self.Lmenu = self.loadMenuCB
@@ -78,12 +87,28 @@ class PythonInterface:
         # Save menu item
         self.mSave =  XPLMAppendMenuItem(self.mMain, 'New profile', 0, 1)
         
+        # Set fuel by numbers
+        self.mSetFuel =  XPLMAppendMenuItem(self.mMain, 'Set W & Fuel by numbers', 1, 1)
+        
         self.values = {}
         
         # Init datarefs
         for key in DATAREFS: self.values[key] = EasyDref(DATAREFS[key])
         
+        # Init fuel datarefs 
+        self.fuel = self.values['Fuel tanks']
+        self.drPayLoad = self.values['Payload']
+        self.drNFuelTanks = EasyDref('sim/aircraft/overflow/acf_num_tanks(int)')
+        
         return self.Name, self.Sig, self.Desc
+    
+    def float(self, string):
+        # try to convert to float or return 0
+        try: 
+            val = float(string)
+        except ValueError:
+            val = 0.0
+        return val
     
     def rebuildMenu(self, setDefault = False):
         XPLMClearAllMenuItems(self.mLoad)
@@ -110,6 +135,11 @@ class PythonInterface:
     
     def XPluginReceiveMessage(self, inFromWho, inMessage, inParam):
         if (inFromWho == XPLM_PLUGIN_XPLANE):
+            if (inFromWho == XPLM_PLUGIN_XPLANE and inParam == XPLM_PLUGIN_XPLANE):
+                # Destroy fuel window
+                if self.fuelWindow:
+                    XPDestroyWidget(self, self.FuelWindowWidget, 1)
+                    self.fuelWindow = False
             # On plane load
             if (inParam == XPLM_PLUGIN_XPLANE and inMessage == XPLM_MSG_AIRPORT_LOADED ): # On aircraft change
                 plane, plane_path = XPLMGetNthAircraftModel(0)
@@ -157,14 +187,27 @@ class PythonInterface:
             self.rebuildMenu()
     
     def mainMenuCB(self, menuRef, menuItem):
-        if (not self.window):
-             self.CreateWindow(221, 640, 220, 90)
-             self.window = True
+        # Save menu
+        if menuItem == 0:
+            if (not self.window):
+                 self.CreateWindow(221, 640, 220, 90)
+                 self.window = True
+            
+            elif (not XPIsWidgetVisible(self.WindowWidget)):
+                  XPShowWidget(self.WindowWidget)
+                  XPSetKeyboardFocus(self.nameInput)
         
-        elif (not XPIsWidgetVisible(self.WindowWidget)):
-              XPShowWidget(self.WindowWidget)
-              XPSetKeyboardFocus(self.nameInput)
-        
+        if menuItem == 1:
+            if (not self.fuelWindow):
+                 self.CreateFuelWindow(221, 640, 220, 105)
+                 self.fuelWindow = True
+            
+            elif (not XPIsWidgetVisible(self.FuelWindowWidget)):
+                  XPShowWidget(self.FuelWindowWidget)
+                  self.FuelWindowUpdate()
+                  #XPSetKeyboardFocus(self.nameInput)
+                  
+            
     def loadMenuCB(self, menuRef, menuItem):
         self.LoadPreset(menuItem)
     
@@ -209,6 +252,79 @@ class PythonInterface:
         # set focus
         XPSetKeyboardFocus(self.nameInput)
         pass
+    
+    def CreateFuelWindow(self, x, y, w, h):
+        # Get number of fuel tanks
+        self.nFuelTanks = self.drNFuelTanks.value
+        
+        x2 = x + w
+        y2 = y - h - self.nFuelTanks * 20 
+        Buffer = "Set Weight Fuel by numbers"
+        
+        # Create the Main Widget window
+        self.FuelWindowWidget = XPCreateWidget(x, y, x2, y2, 1, Buffer, 1,0 , xpWidgetClass_MainWindow)
+        
+        # Add Close Box decorations to the Main Widget
+        XPSetWidgetProperty(self.FuelWindowWidget, xpProperty_MainWindowHasCloseBoxes, 1)
+        
+        XPCreateWidget(x+15, y-46, x+35, y-54, 1, 'Payload', 0, self.FuelWindowWidget, xpWidgetClass_Caption)
+        self.payLoadInput = XPCreateWidget(x+60, y-40, x+190, y-62, 1, "", 0, self.FuelWindowWidget, xpWidgetClass_TextField)
+        XPSetWidgetProperty(self.payLoadInput, xpProperty_TextFieldType, xpTextEntryField)
+        XPSetWidgetProperty(self.payLoadInput, xpProperty_Enabled, 1)
+        y -= 25
+        
+        self.tankInput = []
+         
+        for i in range(self.nFuelTanks):
+            XPCreateWidget(x+20, y-46, x+40, y-54, 1, 'Tank ' + str(i+1), 0, self.FuelWindowWidget, xpWidgetClass_Caption)
+            tankInput = XPCreateWidget(x+60, y-40, x+190, y-62, 1, "", 0, self.FuelWindowWidget, xpWidgetClass_TextField)
+            XPSetWidgetProperty(tankInput, xpProperty_TextFieldType, xpTextEntryField)
+            XPSetWidgetProperty(tankInput, xpProperty_Enabled, 1)
+            y -= 20
+            self.tankInput.append(tankInput)
+        
+        self.FuelWindowUpdate()
+        
+        # Save button
+        self.FuelSaveButton = XPCreateWidget(x+160, y-50, x+200, y-62, 1, "Save", 0, self.FuelWindowWidget, xpWidgetClass_Button)
+        XPSetWidgetProperty(self.FuelSaveButton, xpProperty_ButtonType, xpPushButton)
+        
+        # Register our widget handler
+        self.FuelWindowHandlerCB = self.FuelWindowHandler
+        XPAddWidgetCallback(self, self.FuelWindowWidget, self.FuelWindowHandlerCB)
+        
+        
+    def FuelWindowUpdate(self):
+        fuelTanks = self.fuel.value
+        
+        XPSetWidgetDescriptor(self.payLoadInput, "%.0f" % (self.drPayLoad.value * KG2LB))
+        
+        for i in range(self.nFuelTanks):
+            XPSetWidgetDescriptor(self.tankInput[i], "%.0f" % (fuelTanks[i] * KG2LB))
+        pass
+    
+    def FuelWindowHandler(self, inMessage, inWidget, inParam1, inParam2):
+        if (inMessage == xpMessage_CloseButtonPushed):
+            if (self.fuelWindow):
+                XPHideWidget(self.FuelWindowWidget)
+            return 1
+
+        # Handle any button pushes
+        if (inMessage == xpMsg_PushButtonPressed):
+
+            if (inParam1 == self.FuelSaveButton):
+                buff = []
+                XPGetWidgetDescriptor(self.payLoadInput, buff, 256)
+                self.drPayLoad.value = self.float(buff[0]) * LB2KG
+                
+                data = []
+                for i in range(self.nFuelTanks):
+                    buff = []
+                    XPGetWidgetDescriptor(self.tankInput[i], buff, 256)
+                    data.append(self.float(buff[0]) * LB2KG)
+                self.fuel.value = data
+                return 1
+        return 0
 
     def WindowHandler(self, inMessage, inWidget, inParam1, inParam2):
         if (inMessage == xpMessage_CloseButtonPushed):
