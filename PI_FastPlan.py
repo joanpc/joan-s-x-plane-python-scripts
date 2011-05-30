@@ -38,7 +38,10 @@ from XPLMMenus import *
 from XPWidgetDefs import *
 from XPWidgets import *
 from XPStandardWidgets import *
-import httplib, urllib, re
+import httplib
+import urllib
+import re
+import os
 
 # False constants
 VERSION = "0.3"
@@ -48,10 +51,11 @@ AIRAC='1105'
 HELP_CAPTION= 'Enter your desired Origin and destination airport. ex: LEBL LEMG'
 MAX_FMS_ENTRIES=100
 XP_DB_MATCH_PRECISION=0.1
+UFMC_PLANS_PATH='Resources/plugins/FJCC_FMC/FlightPlans'
 
 class rfind:
     @classmethod
-    def RouteFind(self, orig, destination, maxalt = 'FL330', minalt = 'FL330'):
+    def RouteFind(self, orig, destination, maxalt = 'FL330', minalt = 'FL330', ufmc = False):
         # query params
         params = urllib.urlencode({
         'dbid':      AIRAC,
@@ -77,28 +81,38 @@ class rfind:
         rec = False
         navpoints = []
         
-        for line in it:
-            
-            if '</pre>' in line:
-                break   
-            if rec: 
-                m = re.search("([^ ]*) *([^ ]*) *([0-9]*) *([0-9]*)[^N|S]*([^ ]+)[^E|W]*([^ ]+) *", line)
-                lat = m.group(5)
-                lon = m.group(6)
+        if ufmc:
+            for line in it:
+                if '<tt>' in line[:5]:
+                    for i in re.findall('<b>([^<]*)<\/b> *([^< ]*)', line):
+                        fix, way = i
+                        navpoints.append(fix)
+                        if not way in ['DCT', 'SID', 'STAR', '']:
+                            navpoints.append(way)
+                    return navpoints
+        else:
+            for line in it:
                 
-                shift = 0
-                if m.group(4): shift = 1
-                heading = m.group(2 + shift)
-                
-                lat = float(lat[1:3]) + float(lat[4:6])/60 + float(lat[7:12])/3600
-                lon = float(lon[1:4]) + float(lon[5:7])/60 + float(lon[8:13])/3600
-                if m.group(5)[0] == 'S': lat *= -1
-                if m.group(6)[0] == 'W': lon *= -1
-                
-                navpoints.append((m.group(1), lat, lon, heading))
-            if ('<pre>' in line):
-                rec = True
-
+                if '</pre>' in line:
+                    break
+                if rec:
+                    m = re.search("([^ ]*) *([^ ]*) *([0-9]*) *([0-9]*)[^N|S]*([^ ]+)[^E|W]*([^ ]+) *", line)
+                    lat = m.group(5)
+                    lon = m.group(6)
+                    
+                    shift = 0
+                    if m.group(4): shift = 1
+                    heading = m.group(2 + shift)
+                    
+                    lat = float(lat[1:3]) + float(lat[4:6])/60 + float(lat[7:12])/3600
+                    lon = float(lon[1:4]) + float(lon[5:7])/60 + float(lon[8:13])/3600
+                    if m.group(5)[0] == 'S': lat *= -1
+                    if m.group(6)[0] == 'W': lon *= -1
+                    
+                    navpoints.append((m.group(1), lat, lon, heading))
+                if ('<pre>' in line):
+                    rec = True
+                    
         return navpoints
     @classmethod
     def clearFMS(self):
@@ -118,7 +132,14 @@ class rfind:
             comp_route.append(route[i])
             last = route[i][3]
         return comp_route
-            
+    @classmethod
+    def SaveUfmcPlan(self, path, plan):
+        orig, dest = plan.pop(0), plan.pop(-1)
+        fname = path + '/' + orig + dest + '.ufmc'
+        f = open(fname , 'w')
+        f.write(orig + '\n' + dest + '\n' + '\n'.join(plan) + '\n99\n\n')
+        f.close()
+
     @classmethod
     def NavaidsToXplane(self, navaids):
         i = 0
@@ -157,6 +178,13 @@ class PythonInterface:
         self.Desc = "FastPlant rfinder FMC tool"
         
         self.window = False
+        
+        self.ufmcPlansPath = False
+        path = ""
+        path = XPLMGetSystemPath(path)
+        path += UFMC_PLANS_PATH
+        if os.path.exists(path):
+            self.ufmcPlansPath = path
         
         # Main menu
         self.Cmenu = self.mmenuCallback
@@ -214,11 +242,19 @@ class PythonInterface:
         HelpCaption = XPCreateWidget(x+20, y-10, x+300, y-52, 1, HELP_CAPTION, 0, self.WindowWidget, xpWidgetClass_Caption)
         
         # find route button
-        self.RouteButton = XPCreateWidget(x+310, y-50, x+400, y-72, 1, "Find Route", 0, self.WindowWidget, xpWidgetClass_Button)
+        self.RouteButton = XPCreateWidget(x+310, y-50, x+400, y-72, 1, "To FMC", 0, self.WindowWidget, xpWidgetClass_Button)
+
+        x2 = 0
+        self.UfmcButton = False
+        # UFMC button
+        if (self.ufmcPlansPath):
+            # find route button
+            self.UfmcButton = XPCreateWidget(x+210, y-50, x+300, y-72, 1, "To UFMC", 0, self.WindowWidget, xpWidgetClass_Button)
+            x2 = -100
 
         XPSetWidgetProperty(self.RouteButton, xpProperty_ButtonType, xpPushButton)
         # Route input
-        self.routeInput = XPCreateWidget(x+20, y-50, x+300, y-72, 1, "", 0, self.WindowWidget, xpWidgetClass_TextField)
+        self.routeInput = XPCreateWidget(x+20, y-50, x+300+x2, y-72, 1, "", 0, self.WindowWidget, xpWidgetClass_TextField)
         XPSetWidgetProperty(self.routeInput, xpProperty_TextFieldType, xpTextEntryField)
         XPSetWidgetProperty(self.routeInput, xpProperty_Enabled, 1)
         
@@ -242,18 +278,18 @@ class PythonInterface:
         # Handle any button pushes
         if (inMessage == xpMsg_PushButtonPressed):
 
+            XPSetWidgetDescriptor(self.errorCaption, '')
+            buff = []
+            XPGetWidgetDescriptor(self.routeInput, buff, 256)
+            param = buff[0].split(' ')
+                
             if (inParam1 == self.RouteButton):
-                # hide, lost focus
-                #XPLoseKeyboardFocus(self.routeInput)
-                XPSetWidgetDescriptor(self.errorCaption, '')
-                buff = []
-                XPGetWidgetDescriptor(self.routeInput, buff, 256)
-                param = buff[0].split(' ')
                 if len(param) > 1:
                     XPHideWidget(self.WindowWidget)
                     route = rfind.RouteFind(param[0], param[1])
+                    
                     nfix = len(route)
-                    if nfix <= MAX_FMS_ENTRIES:
+                    if 1 < nfix <= MAX_FMS_ENTRIES:
                         rfind.NavaidsToXplane(route)
                     else:
                         route = rfind.CompressRoute(route)
@@ -265,5 +301,17 @@ class PythonInterface:
                             XPShowWidget(self.WindowWidget)
                             XPSetKeyboardFocus(self.routeInput)
                 return 1
+            if (inParam1 == self.UfmcButton):
+                if len(param) > 1:
+                    XPHideWidget(self.WindowWidget)
+                    route = rfind.RouteFind(param[0], param[1], ufmc = True)
+                    if len(route) > 1:
+                        rfind.SaveUfmcPlan(self.ufmcPlansPath, route)
+                    else:
+                        XPSetWidgetDescriptor(self.errorCaption, 'ERROR: route not found.')
+                        XPShowWidget(self.WindowWidget)
+                        XPSetKeyboardFocus(self.routeInput)
+                return 1    
+                
         return 0
         
