@@ -87,7 +87,7 @@ class rfind:
                     for i in re.findall('<b>([^<]*)<\/b> *([^< ]*)', line):
                         fix, way = i
                         navpoints.append(fix)
-                        if not way in ['DCT', 'SID', 'STAR', '']:
+                        if not way in ['SID', 'STAR', '']:
                             navpoints.append(way)
                     return navpoints
         else:
@@ -135,9 +135,13 @@ class rfind:
     @classmethod
     def SaveUfmcPlan(self, path, plan):
         orig, dest = plan.pop(0), plan.pop(-1)
+        star = 'DCT\n'
+        if plan[0] == 'DCT': start = ''
+        if plan[-1] == 'DCT': plan.pop(-1)
+        
         fname = path + '/' + orig + dest + '.ufmc'
         f = open(fname , 'w')
-        f.write(orig + '\n' + dest + '\n' + '\n'.join(plan) + '\n99\n\n')
+        f.write(orig + '\n' + dest + '\n' + star + '\n'.join(plan) + '\n99\n\n')
         f.close()
 
     @classmethod
