@@ -125,6 +125,11 @@ class PythonInterface:
     
     def XPluginStop(self):
         XPLMDestroyMenu(self, self.mMain)
+        XPLMDestroyMenu(self, self.mDelete)
+        if (self.window):
+            XPDestroyWidget(self, self.WindowWidget, 1)
+        if (self.fuelWindow):
+            XPDestroyWidget(self, self.FuelWindowWidget, 1)
         pass
         
     def XPluginEnable(self):

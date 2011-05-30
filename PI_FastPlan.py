@@ -196,6 +196,8 @@ class PythonInterface:
     
     def XPluginStop(self):
         XPLMDestroyMenu(self, self.mMain)
+        if (self.window):
+            XPDestroyWidget(self, self.WindowWidget, 1)
         pass
         
     def XPluginEnable(self):
@@ -242,7 +244,7 @@ class PythonInterface:
         HelpCaption = XPCreateWidget(x+20, y-10, x+300, y-52, 1, HELP_CAPTION, 0, self.WindowWidget, xpWidgetClass_Caption)
         
         # find route button
-        self.RouteButton = XPCreateWidget(x+310, y-50, x+400, y-72, 1, "To FMC", 0, self.WindowWidget, xpWidgetClass_Button)
+        self.RouteButton = XPCreateWidget(x+310, y-50, x+400, y-72, 1, "To XP FMC", 0, self.WindowWidget, xpWidgetClass_Button)
 
         x2 = 0
         self.UfmcButton = False
