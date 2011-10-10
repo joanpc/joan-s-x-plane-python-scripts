@@ -35,7 +35,7 @@ from os import path, makedirs
 
 CONF_FILENAME = 'CSV_logger.ini'
 ACF_CONF_FILENAME = CONF_FILENAME
-VERSION = "1.0"
+VERSION = "1.1"
 
 class PythonInterface:
     def XPluginStart(self):
@@ -137,7 +137,6 @@ class PythonInterface:
                     else:
                         self.hcols.append(item[0])
                     self.cols.append(dref)
-                break
             if (section == 'CONFIG'):
                 for item in config.items(section):
                     # print item
@@ -149,7 +148,6 @@ class PythonInterface:
                     if item[0] == 'autostart':
                         self.autostart = item[1].lower() in ('true', 'yes', 'y', '1')
                         print 'autostart', self.autostart
-                break
     
     def clearConfig(self):
         pass
