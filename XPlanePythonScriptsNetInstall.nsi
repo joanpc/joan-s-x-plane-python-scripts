@@ -2,12 +2,12 @@
 ; NSIS X-Plane Python Scripts Installer for windows
 ;
 
-; NSIS Required plugins:
+; This script can be build with NSIS: http://nsis.sourceforge.net
+;
+; Required NSIS plugins:
 ; ----------------------
 ; INETC:  http://nsis.sourceforge.net/Inetc_plug-in
 ; ZIPDLL: http://nsis.sourceforge.net/ZipDLL_plug-in
-;
-
 
 ; Copyright (C) 2012  Joan Perez i Cauhe
 ;
@@ -28,34 +28,36 @@
 !include "MUI2.nsh"
 
 ; The name of the installer
-Name "X-Plane Python Plugins Net Installer"
+Name    "X-Plane Python Plugins Net Installer"
 caption "X-Plane Python Plugins Net Installer"
 
 ; The file to write
 OutFile "PythonScriptsNetInstaller.exe"
 
-; The default installation directory
-InstallDir $PROGRAMFILES\X-Plane
+; Default installation directory
+InstallDir "$PROGRAMFILES"
 
 ; Request application privileges for Windows Vista
 RequestExecutionLevel user
 
-
+; --------------
 ; CUSTOM Strings
+; --------------
 
-!define MUI_DIRECTORYPAGE_TEXT_TOP "Select your X-Plane installation folder in wich to install X-Plane plugins"
-!define MUI_DIRECTORYPAGE_TEXT_DESTINATION "X-Plane folder"
+!define MUI_DIRECTORYPAGE_TEXT_TOP          "Please locate your X-Plane installation folder in wich to install the plugins"
+!define MUI_DIRECTORYPAGE_TEXT_DESTINATION  "X-Plane folder"
 
-!define MUI_COMPONENTSPAGE_TEXT_TOP "Choose wich components to install"
-!define MUI_COMPONENTSPAGE_TEXT_COMPLIST "Select wich components you want to install."
+!define MUI_COMPONENTSPAGE_TEXT_TOP         "Choose wich components to install"
+!define MUI_COMPONENTSPAGE_TEXT_COMPLIST    "Select wich components you want to install."
 
-!define MUI_FINISHPAGE_TITLE  "Thanks for installing my plugins!"
-!define MUI_FINISHPAGE_TEXT   "Installation finished. $\n$\nEnjoy and send-me your comments on the .org!$\n$\n$\n joanpc."
+!define MUI_FINISHPAGE_TITLE                "Thanks for installing my plugins!"
+!define MUI_FINISHPAGE_TEXT                 "Installation finished. $\n$\nEnjoy and send-me your comments on the .org!$\n$\n$\n joanpc."
 
-!define MUI_FINISHPAGE_NOREBOOTSUPPORT
+!define MUI_FINISHPAGE_NOREBOOTSUPPORT ; Force disable reboot
 
-;--------------------------------
-; Pages
+; -----
+; PAGES
+; -----
 
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_COMPONENTS
@@ -66,8 +68,9 @@ RequestExecutionLevel user
 
 DirText "Please select your X-Plane installation Folder."
 
-;--------------------------------
-; Globals
+; ----------------
+; GLOBAL VARIABLES
+; ----------------
 
 Var /GLOBAL SCRIPTS
 var /GLOBAL SRC
@@ -75,18 +78,35 @@ var /GLOBAL SOURCE
 var /GLOBAL NAME
 var /GLOBAL DOWNLOADS
 
+
 ; Check X-Plane folder
 Function .onVerifyInstDir
-    IfFileExists $INSTDIR\X-Plane.exe PathGood
+    IfFileExists "$INSTDIR\X-Plane.exe" PathGood
       Abort ;
     PathGood:
 FunctionEnd
 
+
+Function .onInit
+   IfFileExists "$PROGRAMFILES\X-Plane" 0 +2
+   StrCpy $INSTDIR "$PROGRAMFILES\X-Plane"
+   IfFileExists "$PROGRAMFILES\X-Plane 9" 0 +2
+   StrCpy $INSTDIR "$PROGRAMFILES\X-Plane 9"
+   IfFileExists "$PROGRAMFILES\X-Plane 10" 0 +2
+   StrCpy $INSTDIR "$PROGRAMFILES\X-Plane 10"
+FunctionEnd
+
+; --------
 ; SECTIONS
+; --------
 
 Section "Python 2.7" python
   Call dirCheck
+  IfFileExists "$DOWNLOADS\python-2.7.2.msi" 0 +2
+  MessageBox MB_YESNO "A previously downloaded Python installer is avaliable on the hard disk. $\n\
+                       Do you want to use-it?" IDYES Install
   inetc::get /NOCANCEL http://python.org/ftp/python/2.7.2/python-2.7.2.msi python-2.7.2.msi
+  Install:
   ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.2.msi"'
 SectionEnd
 
@@ -98,7 +118,11 @@ SectionEnd
 
 Section "OpenSceneryX" opensceneryx
   Call dirCheck
+  IfFileExists "$DOWNLOADS\OpenSceneryX-Installer-Windows.zip" 0 +2
+  MessageBox MB_YESNO "A previously downloaded  OpenSceneryX installer is avaliable on the hard disk. $\n\
+                       Do you want to use-it?" IDYES Install
   inetc::get /NOCANCEL http://www.opensceneryx.com/downloads/OpenSceneryX-Installer-Windows.zip OpenSceneryX-Installer-Windows.zip
+  Install:
   ZipDLL::extractall  $DOWNLOADS\OpenSceneryX-Installer-Windows.zip "$DOWNLOADS"
   ExecWait '$DOWNLOADS\OpenSceneryX Installer\OpenSceneryX Installer.exe'
   RmDir /r '$DOWNLOADS\OpenSceneryX Installer'
@@ -129,7 +153,10 @@ Section "FastPlan" fastplan
 SectionEnd
 
 Function githubInstall
-  
+  ;
+  ; Install a zip file from github
+  ;
+ 
   Call dirCheck
   inetc::get /NOCANCEL $SOURCE $NAME.zip
 
@@ -166,9 +193,7 @@ Function dirCheck
   SetOutPath        "$DOWNLOADS"
 FunctionEnd
 
-
-;--------------------------------
-; Descriptions
+; Section Descriptions
 
   ;Language strings
   LangString DESC_python ${LANG_ENGLISH} "Required by all plugins. $\n$\n\
