@@ -112,7 +112,7 @@ SectionEnd
 
 Section "Python interface - Sandy Barbour" pyinterface
   Call dirCheck
-  inetc::get /NOCANCEL http://www.xpluginsdk.org/downloads/sdk200/PythonInterfaceWin27.zip PythonInterfaceWin27.zip
+  inetc::get /NOCANCEL http://www.xpluginsdk.org/downloads/latest/PythonInterfaceWin27.zip PythonInterfaceWin27.zip
   ZipDLL::extractall  $DOWNLOADS\PythonInterfaceWin27.zip "$INSTDIR\Resources\plugins"
 SectionEnd
 
