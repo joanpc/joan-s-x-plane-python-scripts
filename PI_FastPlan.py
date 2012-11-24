@@ -44,7 +44,7 @@ import re
 import os
 
 # False constants
-VERSION = "0.3"
+VERSION = "0.4"
 RFIND_URL = "http://rfinder.asalink.net/free/autoroute_rtx.php"
 NAVAID_TYPES = xplm_Nav_Airport + xplm_Nav_NDB + xplm_Nav_VOR + xplm_Nav_Fix + xplm_Nav_DME
 AIRAC='1105'
@@ -103,9 +103,8 @@ class rfind:
                     shift = 0
                     if m.group(4): shift = 1
                     heading = m.group(2 + shift)
-                    
-                    lat = float(lat[1:3]) + float(lat[4:6])/60 + float(lat[7:12])/3600
-                    lon = float(lon[1:4]) + float(lon[5:7])/60 + float(lon[8:13])/3600
+                    lat = float(lat[1:3]) + float(lat[8:10])/60 + float(lat[11:16])/3600
+                    lon = float(lon[1:4]) + float(lon[9:11])/60 + float(lon[12:17])/3600
                     if m.group(5)[0] == 'S': lat *= -1
                     if m.group(6)[0] == 'W': lon *= -1
                     
