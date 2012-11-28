@@ -3,8 +3,9 @@
    {
       "name":        "Joan's Scripts updater",
       "version":     "1.0",
-      "update_url":  "https://github.com/joanpc/XplaneNoaaWeather/zipball/master",
-      "update_type": "zip"
+      "update_url":  "https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_ScriptsUpdater.py",
+      "update_type": "direct"
+      "update_filename": "PI_ScriptsUpdater.py"
    },
 "noaWeather.joanpc.PI":
    {
@@ -24,7 +25,7 @@
 "GroundServices.joanpc.PI":
    {
       "name":        "Ground Services",
-      "version":     "alpha-5",
+      "version":     "alpha5",
       "update_url":  "https://github.com/joanpc/GroundServices/zipball/master",
       "update_type": "zip"
    },
