@@ -1,0 +1,24 @@
+{
+"ScriptUpdater.joanpc.PI":
+   {
+      "name":        "XPjpc Scripts updater",
+      "version":     "1.0",
+      "update_url":  "https://github.com/joanpc/XplaneNoaaWeather/zipball/master",
+      "update_type": "zip"
+   },
+"noaWeather.joanpc.PI":
+   {
+      "name":        "XGFS NOAA Weather",
+      "version":     "1.3rc1",
+      "update_url":  "https://github.com/joanpc/XplaneNoaaWeather/zipball/master",
+      "update_type": "zip"
+   },
+"FastPlan.joanpc.PI":
+   {
+      "name":        "Fast Plan",
+      "version":     "0.4",
+      "update_url":  "https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_FastPlan.py",
+      "update_type": "direct",
+      "update_filename": "PI_FastPlan.py"
+   }
+}
