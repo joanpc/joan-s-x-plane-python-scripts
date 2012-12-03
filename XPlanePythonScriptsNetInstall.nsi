@@ -68,6 +68,10 @@ RequestExecutionLevel user
 
 DirText "Please select your X-Plane installation Folder."
 
+InstType "32bit"
+InstType "64bit"
+
+
 ; ----------------
 ; GLOBAL VARIABLES
 ; ----------------
@@ -100,23 +104,40 @@ FunctionEnd
 ; SECTIONS
 ; --------
 
-Section "Python 2.7" python
+Section "Python 2.7 (32bit)" python32
+  SectionIn 1
   Call dirCheck
-  IfFileExists "$DOWNLOADS\python-2.7.2.msi" 0 +2
+  IfFileExists "$DOWNLOADS\python-2.7.3.msi" 0 +2
   MessageBox MB_YESNO "A previously downloaded Python installer is avaliable on the hard disk. $\n\
                        Do you want to use-it?" IDYES Install
-  inetc::get /NOCANCEL http://python.org/ftp/python/2.7.2/python-2.7.2.msi python-2.7.2.msi
+  inetc::get /NOCANCEL http://python.org/ftp/python/2.7.2/python-2.7.3.msi python-2.7.3.msi
   Install:
-  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.2.msi"'
+  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.3.msi"'
+SectionEnd
+
+Section "Python 2.7 (64bit)" python64
+  SectionIn 2
+  Call dirCheck
+  IfFileExists "$DOWNLOADS\python-2.7.3.amd64.msi" 0 +2
+  MessageBox MB_YESNO "A previously downloaded Python installer is avaliable on the hard disk. $\n\
+                       Do you want to use-it?" IDYES Install
+  inetc::get /NOCANCEL http://www.python.org/ftp/python/2.7.3/python-2.7.3.amd64.msi python-2.7.3.amd64.msi
+  Install:
+  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.3.amd64.msi"'
 SectionEnd
 
 Section "Python interface - Sandy Barbour" pyinterface
+  SectionIn 1 2
   Call dirCheck
-  inetc::get /NOCANCEL http://www.xpluginsdk.org/downloads/latest/PythonInterfaceWin27.zip PythonInterfaceWin27.zip
-  ZipDLL::extractall  $DOWNLOADS\PythonInterfaceWin27.zip "$INSTDIR\Resources\plugins"
+  inetc::get /NOCANCEL http://www.xpluginsdk.org/downloads/latest/Python27/PythonInterface.zip PythonInterface.zip
+  Delete "$INSTDIR\Resources\plugins\PythonInterfaceWin27.xpl"
+  Delete "$INSTDIR\Resources\plugins\PythonInterfaceWin26.xpl"
+  Delete "$INSTDIR\Resources\plugins\PythonInterface.ini"
+  ZipDLL::extractall  $DOWNLOADS\PythonInterface.zip "$INSTDIR\Resources\plugins"
 SectionEnd
 
 Section "OpenSceneryX" opensceneryx
+  SectionIn 1 2
   Call dirCheck
   IfFileExists "$DOWNLOADS\OpenSceneryX-Installer-Windows.zip" 0 +2
   MessageBox MB_YESNO "A previously downloaded  OpenSceneryX installer is avaliable on the hard disk. $\n\
@@ -129,28 +150,55 @@ Section "OpenSceneryX" opensceneryx
 SectionEnd
 
 Section "XGFS NOAA Weather" xgfs
+  SectionIn 1 2
   StrCpy $SOURCE "https://github.com/joanpc/XplaneNoaaWeather/zipball/master"
   StrCpy $NAME "XnoaaWeather"
   Call githubInstall
 SectionEnd
 
 Section "Ground Services" groundServices
+  SectionIn 1 2
   StrCpy $SOURCE "https://github.com/joanpc/GroundServices/zipball/master"
   StrCpy $NAME "GroundServices"
   Call githubInstall
 SectionEnd
 
 Section "xJoyMap" xjoymap
+  SectionIn 1 2
   StrCpy $SOURCE "https://github.com/joanpc/xJoyMap/zipball/master"
   StrCpy $NAME "xJoyMap"
   Call githubInstall
 SectionEnd
 
 Section "FastPlan" fastplan
+  SectionIn 1 2
   Call dirCheck
   inetc::get /NOCANCEL https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_FastPlan.py PI_FastPlan.py
   Rename /REBOOTOK "$DOWNLOADS\PI_FastPlan.py" "$SCRIPTS\PI_FastPlan.py"
 SectionEnd
+
+Section "ScriptsUpdater" scriptsupdater
+  SectionIn 1 2
+  Call dirCheck
+  inetc::get /NOCANCEL https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_ScriptsUpdater.py PI_ScriptsUpdater.py
+  Rename /REBOOTOK "$DOWNLOADS\PI_ScriptsUpdater.py" "$SCRIPTS\PI_ScriptsUpdater.py"
+SectionEnd
+
+Function .onSelChange
+  ; 64 or 32 not both
+  # keep section 'test' selected
+  SectionGetFlags ${python32} $0
+  SectionGetFlags ${python64} $1
+  
+
+  IntOp $4 ${SF_SELECTED} | ${SF_RO}
+
+  StrCmp $0 $1 0 +3
+  SectionSetFlags ${python32} 0
+  SectionSetFlags ${python64} 0
+
+
+FunctionEnd
 
 Function githubInstall
   ;
@@ -158,7 +206,7 @@ Function githubInstall
   ;
  
   Call dirCheck
-  inetc::get /NOCANCEL $SOURCE $NAME.zip
+  inetc::get /NOCANCEL $SOURCE $DOWNLOADS\$NAME.zip
 
   ZipDLL::extractall $DOWNLOADS\$NAME.zip "$DOWNLOADS"
   
@@ -218,14 +266,18 @@ FunctionEnd
 
   LangString DESC_fastplan ${LANG_ENGLISH} "Just enter your departure and destination airports and FastPlan will find a route using \
   rfinder.asalink.net and program your FMC."
+  
+  LangString DESC_scriptsupdater ${LANG_ENGLISH} "Update all these scripts from x-plane plugins menu"
 
   ;Assign language strings to sections
   !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-    !insertmacro MUI_DESCRIPTION_TEXT ${python} $(DESC_python)
+    !insertmacro MUI_DESCRIPTION_TEXT ${python32} $(DESC_python)
+    !insertmacro MUI_DESCRIPTION_TEXT ${python64} $(DESC_python)
     !insertmacro MUI_DESCRIPTION_TEXT ${pyinterface} $(DESC_pyinterface)
     !insertmacro MUI_DESCRIPTION_TEXT ${groundServices} $(DESC_GroundServices)
     !insertmacro MUI_DESCRIPTION_TEXT ${xgfs} $(DESC_xgfs)
     !insertmacro MUI_DESCRIPTION_TEXT ${xjoymap} $(DESC_xjoymap)
     !insertmacro MUI_DESCRIPTION_TEXT ${opensceneryx} $(DESC_opensceneryx)
     !insertmacro MUI_DESCRIPTION_TEXT ${fastplan} $(DESC_fastplan)
+    !insertmacro MUI_DESCRIPTION_TEXT ${scriptsupdater} $(DESC_scriptsupdater)
   !insertmacro MUI_FUNCTION_DESCRIPTION_END
