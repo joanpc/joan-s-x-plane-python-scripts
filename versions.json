@@ -10,7 +10,7 @@
 "noaWeather.joanpc.PI":
    {
       "name":        "XGFS NOAA Weather",
-      "version":     "1.5.0",
+      "version":     "1.5.1",
       "update_url":  "https://github.com/joanpc/XplaneNoaaWeather/zipball/master",
       "update_type": "zip"
    },
