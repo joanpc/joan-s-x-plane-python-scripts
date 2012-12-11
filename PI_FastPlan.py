@@ -44,10 +44,10 @@ import re
 import os
 
 # False constants
-VERSION = "0.4"
+VERSION = "0.5"
 RFIND_URL = "http://rfinder.asalink.net/free/autoroute_rtx.php"
 NAVAID_TYPES = xplm_Nav_Airport + xplm_Nav_NDB + xplm_Nav_VOR + xplm_Nav_Fix + xplm_Nav_DME
-AIRAC='1105'
+AIRAC='1212'
 HELP_CAPTION= 'Enter your desired Origin and destination airport. ex: LEBL LEMG'
 MAX_FMS_ENTRIES=100
 XP_DB_MATCH_PRECISION=0.1
