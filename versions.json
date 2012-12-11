@@ -17,7 +17,7 @@
 "FastPlan.joanpc.PI":
    {
       "name":        "Fast Plan",
-      "version":     "0.4",
+      "version":     "0.5",
       "update_url":  "https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_FastPlan.py",
       "update_type": "direct",
       "update_filename": "PI_FastPlan.py"
