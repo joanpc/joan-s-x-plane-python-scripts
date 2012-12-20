@@ -14,8 +14,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 '''
 
-VERSION = '1.0'
-UPDATE_URL='https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/versions.json'
+VERSION = '1.1'
+UPDATE_URL='http://x-plane.joanpc.com/plugins/updater_json/' + VERSION
 
 import json
 import urllib
@@ -28,6 +28,7 @@ class XPScriptsUpdater:
     ''' Process script updates
     '''
     updates = []
+    update_types = ['zip', 'direct']
     
     def __init__(self, xplanedir, plugin = False):
         self.xplanedir = xplanedir
@@ -112,13 +113,19 @@ class XPScriptsUpdater:
             if signature in scripts:
                 # Script installed
                 if data['version'] != scripts[signature]['version']:
-                    action = 'update'
+                    if data['update_type'] in self.update_types:
+                        action = 'update'
+                    else:
+                        action = 'Update instaler first'
                 else:
-                    action = 'na'
+                    action = 'up to date'
                 current_ver =  scripts[signature]['version']   
             else:
                 # Not installed
-                action = 'install'
+                if data['update_type'] in self.update_types:
+                    action = 'install'
+                else:
+                    action = 'Update installer first'
                 current_ver = 'na'
             updates[signature]['action'] = action
             updates[signature]['current_version'] = current_ver
@@ -145,7 +152,7 @@ from XPStandardWidgets import *
 class PythonInterface:
 
     def XPluginStart(self):
-        self.Name = "Joan's Scripts Updater - " + VERSION
+        self.Name = "inSim plugin updater - " + VERSION
         self.Sig = "ScriptUpdater.joanpc.PI"
         self.Desc = "Script Updater tool"
         
@@ -194,7 +201,7 @@ class PythonInterface:
     def CreateWindow(self, x, y, w, h):
         x2 = x + w + 80
         y2 = y - h - len(self.updates) * 26 -20
-        Buffer = "Joan's Xplane Scripts Installer/Updater"
+        Buffer = "inSim joanpc's plugin Installer/Updater"
         
         # Create the Main Widget window
         self.WindowWidget = XPCreateWidget(x, y, x2, y2, 1, Buffer, 1,    0, xpWidgetClass_MainWindow)
@@ -227,7 +234,7 @@ class PythonInterface:
             if data['action'] == "install" or data['action'] == "update":
                 button = XPCreateWidget(x+310, y, x+400, y-20, 1, data['action'], 0, self.WindowWidget, xpWidgetClass_Button)
             else:
-                XPCreateWidget(x + 310, y, x+400, y-20, 1, 'up to date', 0, self.WindowWidget, xpWidgetClass_Caption)
+                XPCreateWidget(x + 310, y, x+400, y-20, 1, data['action'], 0, self.WindowWidget, xpWidgetClass_Caption)
             if button:
                 # Store script signature related to the buttons
                 XPSetWidgetProperty(button, xpProperty_ButtonType, xpPushButton)

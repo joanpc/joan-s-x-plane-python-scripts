@@ -1,8 +1,8 @@
 {
 "ScriptUpdater.joanpc.PI":
    {
-      "name":        "Joan's Scripts updater",
-      "version":     "1.0",
+      "name":        "inSim joanpc plugin updater",
+      "version":     "1.1",
       "update_url":  "https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_ScriptsUpdater.py",
       "update_type": "direct",
       "update_filename": "PI_ScriptsUpdater.py"
