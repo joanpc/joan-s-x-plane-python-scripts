@@ -110,9 +110,9 @@ Section "Python 2.7 (32bit)" python32
   IfFileExists "$DOWNLOADS\python-2.7.3.msi" 0 +2
   MessageBox MB_YESNO "A previously downloaded Python installer is avaliable on the hard disk. $\n\
                        Do you want to use-it?" IDYES Install
-  inetc::get /NOCANCEL http://python.org/ftp/python/2.7.2/python-2.7.3.msi python-2.7.3.msi
+  inetc::get /NOCANCEL http://python.org/ftp/python/2.7.3/python-2.7.3.msi python-2.7.3.msi
   Install:
-  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.3.msi"'
+  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.3.msi" /passive'
 SectionEnd
 
 Section "Python 2.7 (64bit)" python64
@@ -123,7 +123,7 @@ Section "Python 2.7 (64bit)" python64
                        Do you want to use-it?" IDYES Install
   inetc::get /NOCANCEL http://www.python.org/ftp/python/2.7.3/python-2.7.3.amd64.msi python-2.7.3.amd64.msi
   Install:
-  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.3.amd64.msi"'
+  ExecWait '"msiexec" /i /passive "$DOWNLOADS\python-2.7.3.amd64.msi" /passive'
 SectionEnd
 
 Section "Python interface - Sandy Barbour" pyinterface
@@ -134,6 +134,12 @@ Section "Python interface - Sandy Barbour" pyinterface
   Delete "$INSTDIR\Resources\plugins\PythonInterfaceWin26.xpl"
   Delete "$INSTDIR\Resources\plugins\PythonInterface.ini"
   ZipDLL::extractall  $DOWNLOADS\PythonInterface.zip "$INSTDIR\Resources\plugins"
+  CreateDirectory "$SMPROGRAMS\X-Plane Python Interface"
+  CreateShortCut "$SMPROGRAMS\X-Plane Python Interface\PythonScripts.lnk" "$INSTDIR\Resources\plugins\PythonScripts\"
+  CreateShortCut "$SMPROGRAMS\X-Plane Python Interface\Plugins.lnk" "$INSTDIR\Resources\plugins\"
+  WriteINIStr "$SMPROGRAMS\X-Plane Python Interface\X-Plane Python Interface.URL" "InternetShortcut" "URL" "http://www.xpluginsdk.org/python_interface.htm"
+  WriteINIStr "$SMPROGRAMS\X-Plane Python Interface\Joanpc x-plane plugins.URL" "InternetShortcut" "URL" "http://x-plane.joanpc.com/"
+  WriteINIStr "$SMPROGRAMS\X-Plane Python Interface\X-Plane SDK.URL" "InternetShortcut" "URL" "http://www.xsquawkbox.net/xpsdk/"
 SectionEnd
 
 Section "OpenSceneryX" opensceneryx
