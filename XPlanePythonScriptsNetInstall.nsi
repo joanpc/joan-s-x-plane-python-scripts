@@ -130,13 +130,19 @@ Section "Python interface - Sandy Barbour" pyinterface
   SectionIn 1 2
   Call dirCheck
   inetc::get /NOCANCEL http://www.xpluginsdk.org/downloads/latest/Python27/PythonInterface.zip PythonInterface.zip
+  ; Delete old versions
   Delete "$INSTDIR\Resources\plugins\PythonInterfaceWin27.xpl"
   Delete "$INSTDIR\Resources\plugins\PythonInterfaceWin26.xpl"
   Delete "$INSTDIR\Resources\plugins\PythonInterface.ini"
   ZipDLL::extractall  $DOWNLOADS\PythonInterface.zip "$INSTDIR\Resources\plugins"
+  
+  ; Create shortcuts and url links
   CreateDirectory "$SMPROGRAMS\X-Plane Python Interface"
   CreateShortCut "$SMPROGRAMS\X-Plane Python Interface\PythonScripts.lnk" "$INSTDIR\Resources\plugins\PythonScripts\"
   CreateShortCut "$SMPROGRAMS\X-Plane Python Interface\Plugins.lnk" "$INSTDIR\Resources\plugins\"
+  CopyFiles "$ExePath" "$DOWNLOADS\PythonScriptsNetInstaller.exe"
+  CreateShortCut "$SMPROGRAMS\X-Plane Python Interface\Net Installer.lnk" "$DOWNLOADS\PythonScriptsNetInstaller.exe"
+  
   WriteINIStr "$SMPROGRAMS\X-Plane Python Interface\X-Plane Python Interface.URL" "InternetShortcut" "URL" "http://www.xpluginsdk.org/python_interface.htm"
   WriteINIStr "$SMPROGRAMS\X-Plane Python Interface\Joanpc x-plane plugins.URL" "InternetShortcut" "URL" "http://x-plane.joanpc.com/"
   WriteINIStr "$SMPROGRAMS\X-Plane Python Interface\X-Plane SDK.URL" "InternetShortcut" "URL" "http://www.xsquawkbox.net/xpsdk/"
