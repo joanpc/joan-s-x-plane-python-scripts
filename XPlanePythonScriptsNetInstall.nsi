@@ -123,7 +123,7 @@ Section "Python 2.7 (64bit)" python64
                        Do you want to use-it?" IDYES Install
   inetc::get /NOCANCEL http://www.python.org/ftp/python/2.7.3/python-2.7.3.amd64.msi python-2.7.3.amd64.msi
   Install:
-  ExecWait '"msiexec" /i /passive "$DOWNLOADS\python-2.7.3.amd64.msi" /passive'
+  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.3.amd64.msi" /passive'
 SectionEnd
 
 Section "Python interface - Sandy Barbour" pyinterface
