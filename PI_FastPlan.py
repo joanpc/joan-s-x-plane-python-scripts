@@ -42,12 +42,13 @@ import httplib
 import urllib
 import re
 import os
+import datetime
 
 # False constants
 VERSION = "0.5"
 RFIND_URL = "http://rfinder.asalink.net/free/autoroute_rtx.php"
 NAVAID_TYPES = xplm_Nav_Airport + xplm_Nav_NDB + xplm_Nav_VOR + xplm_Nav_Fix + xplm_Nav_DME
-AIRAC='1212'
+AIRAC='1301'
 HELP_CAPTION= 'Enter your desired Origin and destination airport. ex: LEBL LEMG'
 MAX_FMS_ENTRIES=100
 XP_DB_MATCH_PRECISION=0.1
@@ -56,6 +57,12 @@ UFMC_PLANS_PATH='Resources/plugins/FJCC_FMC/FlightPlans'
 class rfind:
     @classmethod
     def RouteFind(self, orig, destination, maxalt = 'FL330', minalt = 'FL330', ufmc = False):
+        # Get current airac
+        today = datetime.date.today()
+        cycle = int(today.strftime('%j'))/28
+        year = today.strftime('%y')
+        AIRAC = "%s%02d" % (year, cycle)
+        
         # query params
         params = urllib.urlencode({
         'dbid':      AIRAC,
@@ -63,18 +70,18 @@ class rfind:
         'ic2':       '',
         'id1':       orig,
         'id2':       destination,
-        'k':         '188039667',
+        'k':         '618309287',
         'lvl':       'B',
         'maxalt':     maxalt,
         'minalt':     minalt,
         'nats':       'R',
         'rnav':       'Y',
-        'usesid':     'Y'
+        'usesid':     'Y',
+        'usestar':    'Y',
         })
         
         # Server Connection
         res = urllib.urlopen(RFIND_URL, params)
-        
         # quick parse
         # TODO handle aiport not found
         it = iter(res)
