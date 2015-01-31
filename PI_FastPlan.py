@@ -38,20 +38,67 @@ from XPLMMenus import *
 from XPWidgetDefs import *
 from XPWidgets import *
 from XPStandardWidgets import *
-import httplib, urllib2, urllib
+import urllib2, urllib
 import re
 import os
 import datetime
 
+import threading
+import Queue
+
 # False constants
-VERSION = "0.6"
+VERSION = "0.7"
 RFIND_URL = "http://rfinder.asalink.net/free/autoroute_rtx.php"
 NAVAID_TYPES = xplm_Nav_Airport + xplm_Nav_NDB + xplm_Nav_VOR + xplm_Nav_Fix + xplm_Nav_DME
-AIRAC='1301'
+AIRAC='1501'
 HELP_CAPTION= 'Enter desired Origin and destination airport. ex: LEBL LEBB'
 MAX_FMS_ENTRIES=100
 XP_DB_MATCH_PRECISION=0.1
 UFMC_PLANS_PATH='Resources/plugins/FJCC_FMC/FlightPlans'
+
+class threadJob:
+    '''
+    Creates threaded job
+    '''
+    q = Queue.Queue()
+    cyclewait = 0.5
+    flightloops = []
+    timeLimit = 45
+    
+    def __init__(self, plugin, job, args, callback):
+        self.plugin = plugin
+        self.job = job
+        self.args = args
+        self.callback = callback
+        self.q = Queue.Queue()
+        self.floop = self.floopCallback
+
+        self.timer = 0
+
+        self.floop = self.floopCallback
+        XPLMRegisterFlightLoopCallback(self.plugin, self.floop, -1, 0)
+        self.__class__.flightloops.append(self.floop)
+
+        self.t = threading.Thread(target = self.run, args = ())
+        self.t.start()
+        
+    def run(self):
+        ret = self.job(*self.args)
+        self.q.put(ret)
+        
+    def floopCallback(self, elapsedMe, elapsedSim, counter, refcon):
+        self.timer += elapsedMe
+        if self.timer > self.timeLimit:
+            self.callback(False)
+            return 0
+        if not self.q.empty():
+            self.callback(self.q.get())
+            return 0
+        return self.cyclewait
+    
+    def clean(self):
+        for floop in self.__class__.flightloops:
+            XPLMUnregisterFlightLoopCallback(self.plugin, floop, 0)
 
 class rfind:
     @classmethod
@@ -69,7 +116,7 @@ class rfind:
         'ic2':       '',
         'id1':       orig,
         'id2':       destination,
-        'k':         '618309287',
+        'k':         '832309203',
         'lvl':       'B',
         'maxalt':     maxalt,
         'minalt':     minalt,
@@ -196,7 +243,7 @@ class rfind:
         w.withdraw()
         w.clipboard_clear()
         w.clipboard_append(text)
-        w.destroy()        
+        w.destroy()
 
 class PythonInterface:
     def XPluginStart(self):
@@ -205,13 +252,15 @@ class PythonInterface:
         self.Desc = "FastPlant rfinder FMC tool"
         
         self.window = False
+        self.th = False
         
         self.ufmcPlansPath = False
         path = ""
         path = XPLMGetSystemPath(path)
         path += UFMC_PLANS_PATH
-        if os.path.exists(path):
-            self.ufmcPlansPath = path
+        # Disabled UFMC Support
+        #if os.path.exists(path):
+        #    self.ufmcPlansPath = path
         
         # Main menu
         self.Cmenu = self.mmenuCallback
@@ -225,7 +274,9 @@ class PythonInterface:
         XPLMDestroyMenu(self, self.mMain)
         if (self.window):
             XPDestroyWidget(self, self.WindowWidget, 1)
-        pass
+        
+        if self.th:
+            self.th.clean()
         
     def XPluginEnable(self):
         return 1
@@ -331,24 +382,12 @@ class PythonInterface:
                 
             if (inParam1 == self.RouteButton):
                 if len(param) > 1:
-                    #XPHideWidget(self.WindowWidget)
-                    uroute, route = rfind.RouteFind(param[0], param[1])
+
+                    XPSetWidgetDescriptor(self.errorCaption, 'Loading route from the net.')
+                    XPSetWidgetProperty(self.RouteButton, xpProperty_Enabled, 0)
                     
-                    nfix = len(route)
-                    if 1 < nfix <= MAX_FMS_ENTRIES:
-                        rfind.NavaidsToXplane(route)
-                        rfind.copyToClipboard(' '.join(uroute))
-                        XPSetWidgetDescriptor(self.errorCaption, 'Route copied to clipboard')
-                        XPSetWidgetDescriptor(self.routeOutput, ' '.join(uroute))
-                    else:
-                        route = rfind.CompressRoute(route)
-                        print nfix, len(route)
-                        if nfix > 1 and len(route) < MAX_FMS_ENTRIES:
-                            rfind.NavaidsToXplane(route)
-                        else:
-                            XPSetWidgetDescriptor(self.errorCaption, 'ERROR: route not found or too large to fit on the FMS')
-                            XPShowWidget(self.WindowWidget)
-                            XPSetKeyboardFocus(self.routeInput)
+                    self.th = threadJob(self, rfind.RouteFind, (param[0], param[1]), self.rfindCallback)
+                    
                 return 1
             if (inParam1 == self.UfmcButton):
                 if len(param) > 1:
@@ -364,3 +403,28 @@ class PythonInterface:
                 
         return 0
         
+    def rfindCallback(self, args):
+        
+        XPSetWidgetProperty(self.RouteButton, xpProperty_Enabled, 1)
+        
+        if not args:
+            XPSetWidgetDescriptor(self.errorCaption, 'Failed.')
+            return 0
+        
+        XPSetWidgetDescriptor(self.errorCaption, 'Route loaded.')
+        
+        uroute, route = args
+        nfix = len(route)
+        if 1 < nfix <= MAX_FMS_ENTRIES:
+            rfind.NavaidsToXplane(route)
+            #rfind.copyToClipboard(' '.join(uroute))
+            #XPSetWidgetDescriptor(self.errorCaption, 'Route copied to clipboard')
+            XPSetWidgetDescriptor(self.routeOutput, ' '.join(uroute))
+        else:
+            route = rfind.CompressRoute(route)
+            if nfix > 1 and len(route) < MAX_FMS_ENTRIES:
+                rfind.NavaidsToXplane(route)
+            else:
+                XPSetWidgetDescriptor(self.errorCaption, 'ERROR: route not found or too large to fit on the FMS')
+                XPShowWidget(self.WindowWidget)
+                XPSetKeyboardFocus(self.routeInput)
