@@ -14,7 +14,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 '''
 
-VERSION = '1.1'
+VERSION = '1.2'
 UPDATE_URL='http://x-plane.joanpc.com/plugins/updater_json/' + VERSION
 
 import json
@@ -23,6 +23,7 @@ import tempfile
 import os
 from zipfile import ZipFile
 from shutil import move, rmtree, copytree, copy
+from time import sleep
 
 class XPScriptsUpdater:
     ''' Process script updates
@@ -71,7 +72,11 @@ class XPScriptsUpdater:
     def update(self, update):
         dpath = self.xplanedir + '/Resources/Downloads'
         installpath = self.xplanedir + '/Resources/plugins/PythonScripts'
-        print update
+        
+        # Broadcast message to all plugins
+        XPLMSendMessageToPlugin(XPLM_NO_PLUGIN_ID, 0x8000000 | 8090 , long(1))
+        PI_SendMessageToScript(self, None, 0x8000000 | 8090, 1)
+        sleep(1)
         
         if not os.path.exists(dpath):
             os.mkdir(dpath)
