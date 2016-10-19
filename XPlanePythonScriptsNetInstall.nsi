@@ -9,7 +9,7 @@
 ; INETC:  http://nsis.sourceforge.net/InetLoad_plug-in
 ; ZIPDLL: http://nsis.sourceforge.net/ZipDLL_plug-in
 
-; Copyright (C) 2012  Joan Perez i Cauhe
+; Copyright (C) 2012-2016  Joan Perez i Cauhe
 ;
 ; ---
 ; This program is free software; you can redistribute it and/or
@@ -23,13 +23,14 @@
 ; GNU General Public License for more details.
 ; ---
 
+!define INSTALLER_VERSION "2.0"
 
 !include "LogicLib.nsh"
 !include "MUI2.nsh"
 
 ; The name of the installer
 Name    "X-Plane Python Plugins Net Installer"
-caption "X-Plane Python Plugins Net Installer"
+Caption "X-Plane Python Plugins Net Installer - v${INSTALLER_VERSION}"
 
 ; The file to write
 OutFile "PythonScriptsNetInstaller.exe"
@@ -76,7 +77,6 @@ InstType "32bit"
 ; ----------------
 
 Var /GLOBAL SCRIPTS
-var /GLOBAL SRC
 var /GLOBAL SOURCE
 var /GLOBAL NAME
 var /GLOBAL DOWNLOADS
@@ -163,7 +163,7 @@ SectionEnd
 Section "XGFS NOAA Weather" xgfs
   SectionIn 1 2
   StrCpy $SOURCE "https://github.com/joanpc/XplaneNoaaWeather/archive/master.zip"
-  StrCpy $NAME "XnoaaWeather"
+  StrCpy $NAME "XplaneNoaaWeather"
   Call githubInstall
 SectionEnd
 
@@ -197,7 +197,7 @@ SectionEnd
 
 Section "-Track" -tracker
   SectionIn 1 2
-  InetLoad::Load /NOCANCEL http://analytics.joanpc.com/piwik.php?action_name=win_install&idsite=4&rec=1&send_image=0&url=http://x-plane.joanpc.com/WindowsInstaller/install&
+  InetLoad::Load /NOCANCEL http://analytics.joanpc.com/piwik.php?action_name=win_install&idsite=4&rec=1&send_image=0&url=http://x-plane.joanpc.com/WindowsInstaller/install/${INSTALLER_VERSION}&
 SectionEnd
 
 Function .onSelChange
@@ -226,24 +226,21 @@ Function githubInstall
 
   ZipDLL::extractall $DOWNLOADS\$NAME.zip "$DOWNLOADS"
 
-  ; Find zip subdir
-  FindFirst $0 $1 "$DOWNLOADS\joanpc-*"
-  StrCpy $SRC "$DOWNLOADS\$1"
-  DetailPrint $SRC
-  FindClose $0
-
   ; Move subdir contents outside
-  FindFirst $0 $1 "$SRC\*.*"
+  FindFirst $0 $1 "$DOWNLOADS\$NAME-master\*.*"
   loop:
     StrCmp $1 "" done
-    Rename /REBOOTOK "$SRC\$1" "$SCRIPTS\$1"
+    StrCmp $1 "." next
+    StrCmp $1 ".." next
+    Rename /REBOOTOK "$DOWNLOADS\$NAME-master\$1" "$SCRIPTS\$1"
+    next:
     FindNext $0 $1
     Goto loop
   done:
   FindClose $0
 
   ; Delete directory
-  RMDIR /r $SRC
+  RMDIR /r $DOWNLOADS\$NAME-master
 FunctionEnd
 
 Function dirCheck
@@ -297,4 +294,3 @@ FunctionEnd
     !insertmacro MUI_DESCRIPTION_TEXT ${fastplan} $(DESC_fastplan)
     !insertmacro MUI_DESCRIPTION_TEXT ${scriptsupdater} $(DESC_scriptsupdater)
   !insertmacro MUI_FUNCTION_DESCRIPTION_END
-  
