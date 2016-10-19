@@ -6,7 +6,7 @@
 ;
 ; Required NSIS plugins:
 ; ----------------------
-; INETC:  http://nsis.sourceforge.net/Inetc_plug-in
+; INETC:  http://nsis.sourceforge.net/InetLoad_plug-in
 ; ZIPDLL: http://nsis.sourceforge.net/ZipDLL_plug-in
 
 ; Copyright (C) 2012  Joan Perez i Cauhe
@@ -38,7 +38,7 @@ OutFile "PythonScriptsNetInstaller.exe"
 InstallDir "$PROGRAMFILES"
 
 ; Request application privileges for Windows Vista
-RequestExecutionLevel user
+RequestExecutionLevel admin
 
 ; --------------
 ; CUSTOM Strings
@@ -68,9 +68,8 @@ RequestExecutionLevel user
 
 DirText "Please select your X-Plane installation Folder."
 
-InstType "32bit"
 InstType "64bit"
-
+InstType "32bit"
 
 ; ----------------
 ; GLOBAL VARIABLES
@@ -104,45 +103,45 @@ FunctionEnd
 ; SECTIONS
 ; --------
 
-Section "Python 2.7 (32bit)" python32
+Section "Python 2.7 (64bit)" python64
   SectionIn 1
   Call dirCheck
-  IfFileExists "$DOWNLOADS\python-2.7.3.msi" 0 +2
+  IfFileExists "$DOWNLOADS\python-2.7.12.amd64.msi" 0 +2
   MessageBox MB_YESNO "A previously downloaded Python installer is avaliable on the hard disk. $\n\
                        Do you want to use-it?" IDYES Install
-  inetc::get /NOCANCEL http://python.org/ftp/python/2.7.3/python-2.7.3.msi python-2.7.3.msi
+  InetLoad::Load /NOCANCEL https://www.python.org/ftp/python/2.7.12/python-2.7.12.amd64.msi python-2.7.12.amd64.msi
   Install:
-  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.3.msi" /passive'
+  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.12.amd64.msi" /passive'
 SectionEnd
 
-Section "Python 2.7 (64bit)" python64
+Section "Python 2.7 (32bit)" python32
   SectionIn 2
   Call dirCheck
-  IfFileExists "$DOWNLOADS\python-2.7.3.amd64.msi" 0 +2
+  IfFileExists "$DOWNLOADS\python-2.7.12.msi" 0 +2
   MessageBox MB_YESNO "A previously downloaded Python installer is avaliable on the hard disk. $\n\
                        Do you want to use-it?" IDYES Install
-  inetc::get /NOCANCEL http://www.python.org/ftp/python/2.7.3/python-2.7.3.amd64.msi python-2.7.3.amd64.msi
+  InetLoad::Load /NOCANCEL https://www.python.org/ftp/python/2.7.12/python-2.7.12.msi python-2.7.12.msi
   Install:
-  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.3.amd64.msi" /passive'
+  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.12.msi" /passive'
 SectionEnd
 
 Section "Python interface - Sandy Barbour" pyinterface
   SectionIn 1 2
   Call dirCheck
-  inetc::get /NOCANCEL http://www.xpluginsdk.org/downloads/latest/Python27/PythonInterface.zip PythonInterface.zip
+  InetLoad::Load /NOCANCEL http://www.xpluginsdk.org/downloads/latest/Python27/PythonInterface.zip PythonInterface.zip
   ; Delete old versions
   Delete "$INSTDIR\Resources\plugins\PythonInterfaceWin27.xpl"
   Delete "$INSTDIR\Resources\plugins\PythonInterfaceWin26.xpl"
   Delete "$INSTDIR\Resources\plugins\PythonInterface.ini"
   ZipDLL::extractall  $DOWNLOADS\PythonInterface.zip "$INSTDIR\Resources\plugins"
-  
+
   ; Create shortcuts and url links
   CreateDirectory "$SMPROGRAMS\X-Plane Python Interface"
   CreateShortCut "$SMPROGRAMS\X-Plane Python Interface\PythonScripts.lnk" "$INSTDIR\Resources\plugins\PythonScripts\"
   CreateShortCut "$SMPROGRAMS\X-Plane Python Interface\Plugins.lnk" "$INSTDIR\Resources\plugins\"
   CopyFiles "$ExePath" "$DOWNLOADS\PythonScriptsNetInstaller.exe"
   CreateShortCut "$SMPROGRAMS\X-Plane Python Interface\Net Installer.lnk" "$DOWNLOADS\PythonScriptsNetInstaller.exe"
-  
+
   WriteINIStr "$SMPROGRAMS\X-Plane Python Interface\X-Plane Python Interface.URL" "InternetShortcut" "URL" "http://www.xpluginsdk.org/python_interface.htm"
   WriteINIStr "$SMPROGRAMS\X-Plane Python Interface\Joanpc x-plane plugins.URL" "InternetShortcut" "URL" "http://x-plane.joanpc.com/"
   WriteINIStr "$SMPROGRAMS\X-Plane Python Interface\X-Plane SDK.URL" "InternetShortcut" "URL" "http://www.xsquawkbox.net/xpsdk/"
@@ -154,7 +153,7 @@ Section "OpenSceneryX" opensceneryx
   IfFileExists "$DOWNLOADS\OpenSceneryX-Installer-Windows.zip" 0 +2
   MessageBox MB_YESNO "A previously downloaded  OpenSceneryX installer is avaliable on the hard disk. $\n\
                        Do you want to use-it?" IDYES Install
-  inetc::get /NOCANCEL http://www.opensceneryx.com/downloads/OpenSceneryX-Installer-Windows.zip OpenSceneryX-Installer-Windows.zip
+  InetLoad::Load /NOCANCEL http://www.opensceneryx.com/downloads/OpenSceneryX-Installer-Windows.zip OpenSceneryX-Installer-Windows.zip
   Install:
   ZipDLL::extractall  $DOWNLOADS\OpenSceneryX-Installer-Windows.zip "$DOWNLOADS"
   ExecWait '$DOWNLOADS\OpenSceneryX Installer\OpenSceneryX Installer.exe'
@@ -163,21 +162,21 @@ SectionEnd
 
 Section "XGFS NOAA Weather" xgfs
   SectionIn 1 2
-  StrCpy $SOURCE "https://github.com/joanpc/XplaneNoaaWeather/zipball/master"
+  StrCpy $SOURCE "https://github.com/joanpc/XplaneNoaaWeather/archive/master.zip"
   StrCpy $NAME "XnoaaWeather"
   Call githubInstall
 SectionEnd
 
 Section "Ground Services" groundServices
   SectionIn 1 2
-  StrCpy $SOURCE "https://github.com/joanpc/GroundServices/zipball/master"
+  StrCpy $SOURCE "https://github.com/joanpc/GroundServices/archive/master.zipr"
   StrCpy $NAME "GroundServices"
   Call githubInstall
 SectionEnd
 
 Section "xJoyMap" xjoymap
   SectionIn 1 2
-  StrCpy $SOURCE "https://github.com/joanpc/xJoyMap/zipball/master"
+  StrCpy $SOURCE "https://github.com/joanpc/xJoyMap/archive/master.zip"
   StrCpy $NAME "xJoyMap"
   Call githubInstall
 SectionEnd
@@ -185,15 +184,20 @@ SectionEnd
 Section "FastPlan" fastplan
   SectionIn 1 2
   Call dirCheck
-  inetc::get /NOCANCEL https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_FastPlan.py PI_FastPlan.py
+  InetLoad::Load /NOCANCEL https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_FastPlan.py PI_FastPlan.py
   Rename /REBOOTOK "$DOWNLOADS\PI_FastPlan.py" "$SCRIPTS\PI_FastPlan.py"
 SectionEnd
 
 Section "ScriptsUpdater" scriptsupdater
   SectionIn 1 2
   Call dirCheck
-  inetc::get /NOCANCEL https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_ScriptsUpdater.py PI_ScriptsUpdater.py
+  InetLoad::Load /NOCANCEL https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_ScriptsUpdater.py PI_ScriptsUpdater.py
   Rename /REBOOTOK "$DOWNLOADS\PI_ScriptsUpdater.py" "$SCRIPTS\PI_ScriptsUpdater.py"
+SectionEnd
+
+Section "-Track" -tracker
+  SectionIn 1 2
+  InetLoad::Load /NOCANCEL http://analytics.joanpc.com/piwik.php?action_name=win_install&idsite=4&rec=1&send_image=0&url=http://x-plane.joanpc.com/WindowsInstaller/install&
 SectionEnd
 
 Function .onSelChange
@@ -201,7 +205,7 @@ Function .onSelChange
   # keep section 'test' selected
   SectionGetFlags ${python32} $0
   SectionGetFlags ${python64} $1
-  
+
 
   IntOp $4 ${SF_SELECTED} | ${SF_RO}
 
@@ -216,18 +220,18 @@ Function githubInstall
   ;
   ; Install a zip file from github
   ;
- 
+
   Call dirCheck
-  inetc::get /NOCANCEL $SOURCE $DOWNLOADS\$NAME.zip
+  InetLoad::Load /NOCANCEL $SOURCE $DOWNLOADS\$NAME.zip
 
   ZipDLL::extractall $DOWNLOADS\$NAME.zip "$DOWNLOADS"
-  
+
   ; Find zip subdir
   FindFirst $0 $1 "$DOWNLOADS\joanpc-*"
   StrCpy $SRC "$DOWNLOADS\$1"
   DetailPrint $SRC
   FindClose $0
-  
+
   ; Move subdir contents outside
   FindFirst $0 $1 "$SRC\*.*"
   loop:
@@ -237,7 +241,7 @@ Function githubInstall
     Goto loop
   done:
   FindClose $0
-  
+
   ; Delete directory
   RMDIR /r $SRC
 FunctionEnd
@@ -269,7 +273,7 @@ FunctionEnd
 
   LangString DESC_opensceneryx ${LANG_ENGLISH} "Required by ground services. $\n$\n\
   The OpenSceneryX project is a free to use library of scenery objects for X-Plane and used by a lot of scenery addons."
-  
+
   LangString DESC_xgfs ${LANG_ENGLISH} "Uses NOAA Global Forecast data to set XPlane Weather. $\n\
   Provides correct upper wind levels and jet-streams over the globe and close-to real weather on remote locations without a close METAR report."
 
@@ -278,7 +282,7 @@ FunctionEnd
 
   LangString DESC_fastplan ${LANG_ENGLISH} "Just enter your departure and destination airports and FastPlan will find a route using \
   rfinder.asalink.net and program your FMC."
-  
+
   LangString DESC_scriptsupdater ${LANG_ENGLISH} "Update all these scripts from x-plane plugins menu"
 
   ;Assign language strings to sections
@@ -293,3 +297,4 @@ FunctionEnd
     !insertmacro MUI_DESCRIPTION_TEXT ${fastplan} $(DESC_fastplan)
     !insertmacro MUI_DESCRIPTION_TEXT ${scriptsupdater} $(DESC_scriptsupdater)
   !insertmacro MUI_FUNCTION_DESCRIPTION_END
+  
