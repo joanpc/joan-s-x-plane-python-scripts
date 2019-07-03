@@ -6,7 +6,7 @@
 ;
 ; Required NSIS plugins:
 ; ----------------------
-; INETC:  http://nsis.sourceforge.net/InetLoad_plug-in
+; INETC:  https://nsis.sourceforge.io/Inetc_plug-in
 ; ZIPDLL: http://nsis.sourceforge.net/ZipDLL_plug-in
 
 ; Copyright (C) 2012-2016  Joan Perez i Cauhe
@@ -109,9 +109,9 @@ Section "Python 2.7 (64bit)" python64
   IfFileExists "$DOWNLOADS\python-2.7.12.amd64.msi" 0 +2
   MessageBox MB_YESNO "A previously downloaded Python installer is avaliable on the hard disk. $\n\
                        Do you want to use-it?" IDYES Install
-  InetLoad::Load /NOCANCEL https://www.python.org/ftp/python/2.7.12/python-2.7.12.amd64.msi python-2.7.12.amd64.msi
+  inetc::get /NOCANCEL https://www.python.org/ftp/python/2.7.16/python-2.7.16.amd64.msi python-2.7.16.amd64.msi
   Install:
-  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.12.amd64.msi" /passive'
+  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.16.amd64.msi" /passive'
 SectionEnd
 
 Section "Python 2.7 (32bit)" python32
@@ -120,15 +120,15 @@ Section "Python 2.7 (32bit)" python32
   IfFileExists "$DOWNLOADS\python-2.7.12.msi" 0 +2
   MessageBox MB_YESNO "A previously downloaded Python installer is avaliable on the hard disk. $\n\
                        Do you want to use-it?" IDYES Install
-  InetLoad::Load /NOCANCEL https://www.python.org/ftp/python/2.7.12/python-2.7.12.msi python-2.7.12.msi
+  inetc::get /NOCANCEL https://www.python.org/ftp/python/2.7.16/python-2.7.16.msi python-2.7.16.msi
   Install:
-  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.12.msi" /passive'
+  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.16.msi" /passive'
 SectionEnd
 
 Section "Python interface - Sandy Barbour" pyinterface
   SectionIn 1 2
   Call dirCheck
-  InetLoad::Load /NOCANCEL http://www.xpluginsdk.org/downloads/latest/Python27/PythonInterface.zip PythonInterface.zip
+  inetc::get /NOCANCEL http://www.xpluginsdk.org/downloads/latest/Python27/PythonInterface.zip PythonInterface.zip
   ; Delete old versions
   Delete "$INSTDIR\Resources\plugins\PythonInterfaceWin27.xpl"
   Delete "$INSTDIR\Resources\plugins\PythonInterfaceWin26.xpl"
@@ -150,14 +150,15 @@ SectionEnd
 Section "OpenSceneryX" opensceneryx
   SectionIn 1 2
   Call dirCheck
-  IfFileExists "$DOWNLOADS\OpenSceneryX-Installer-Windows.zip" 0 +2
+  IfFileExists "$DOWNLOADS\OpenSceneryX Installer\OpenSceneryX Installer.exe" 0 +2
   MessageBox MB_YESNO "A previously downloaded  OpenSceneryX installer is avaliable on the hard disk. $\n\
                        Do you want to use-it?" IDYES Install
-  InetLoad::Load /NOCANCEL http://www.opensceneryx.com/downloads/OpenSceneryX-Installer-Windows.zip OpenSceneryX-Installer-Windows.zip
+  inetc::get /NOCANCEL https://downloads.opensceneryx.com/OpenSceneryX-Installer-Windows-2.6.0.zip OpenSceneryX-Installer-Windows-2.6.0.zip
+  ZipDLL::extractall  $DOWNLOADS\OpenSceneryX-Installer-Windows-2.6.0.zip "$DOWNLOADS"
+  Delete '$DOWNLOADS\OpenSceneryX-Installer-Windows-2.6.0.zip'
   Install:
-  ZipDLL::extractall  $DOWNLOADS\OpenSceneryX-Installer-Windows.zip "$DOWNLOADS"
   ExecWait '$DOWNLOADS\OpenSceneryX Installer\OpenSceneryX Installer.exe'
-  RmDir /r '$DOWNLOADS\OpenSceneryX Installer'
+  ; RmDir /r '$DOWNLOADS\OpenSceneryX Installer'
 SectionEnd
 
 Section "XGFS NOAA Weather" xgfs
@@ -184,20 +185,20 @@ SectionEnd
 Section "FastPlan" fastplan
   SectionIn 1 2
   Call dirCheck
-  InetLoad::Load /NOCANCEL https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_FastPlan.py PI_FastPlan.py
+  inetc::get /NOCANCEL https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_FastPlan.py PI_FastPlan.py
   Rename /REBOOTOK "$DOWNLOADS\PI_FastPlan.py" "$SCRIPTS\PI_FastPlan.py"
 SectionEnd
 
 Section "ScriptsUpdater" scriptsupdater
   SectionIn 1 2
   Call dirCheck
-  InetLoad::Load /NOCANCEL https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_ScriptsUpdater.py PI_ScriptsUpdater.py
+  inetc::get /NOCANCEL https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_ScriptsUpdater.py PI_ScriptsUpdater.py
   Rename /REBOOTOK "$DOWNLOADS\PI_ScriptsUpdater.py" "$SCRIPTS\PI_ScriptsUpdater.py"
 SectionEnd
 
 Section "-Track" -tracker
   SectionIn 1 2
-  InetLoad::Load /NOCANCEL http://analytics.joanpc.com/piwik.php?action_name=win_install&idsite=4&rec=1&send_image=0&url=http://x-plane.joanpc.com/WindowsInstaller/install/${INSTALLER_VERSION}&
+  inetc::get /NOCANCEL http://analytics.joanpc.com/piwik.php?action_name=win_install&idsite=4&rec=1&send_image=0&url=http://x-plane.joanpc.com/WindowsInstaller/install/${INSTALLER_VERSION}&
 SectionEnd
 
 Function .onSelChange
@@ -222,7 +223,7 @@ Function githubInstall
   ;
 
   Call dirCheck
-  InetLoad::Load /NOCANCEL $SOURCE $DOWNLOADS\$NAME.zip
+  inetc::get /NOCANCEL $SOURCE $DOWNLOADS\$NAME.zip
 
   ZipDLL::extractall $DOWNLOADS\$NAME.zip "$DOWNLOADS"
 
