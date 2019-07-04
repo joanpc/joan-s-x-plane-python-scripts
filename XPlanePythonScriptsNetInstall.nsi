@@ -23,7 +23,10 @@
 ; GNU General Public License for more details.
 ; ---
 
-!define INSTALLER_VERSION "2.0"
+!define INSTALLER_VERSION "2.2"
+!define PYTHON_VERSION "2.7.16"
+!define OPENSCENERYX_VERSION "2.6.0"
+!define TRACKER_URL "https://analytics.joanpc.com/piwik.php?idsite=4&rec=1&send_image=0action_name=win_install&"
 
 !include "LogicLib.nsh"
 !include "MUI2.nsh"
@@ -45,14 +48,14 @@ RequestExecutionLevel admin
 ; CUSTOM Strings
 ; --------------
 
-!define MUI_DIRECTORYPAGE_TEXT_TOP          "Please locate your X-Plane installation folder in wich to install the plugins"
+!define MUI_DIRECTORYPAGE_TEXT_TOP          "Please locate your X-Plane installation folder where to install the plugins."
 !define MUI_DIRECTORYPAGE_TEXT_DESTINATION  "X-Plane folder"
 
-!define MUI_COMPONENTSPAGE_TEXT_TOP         "Choose wich components to install"
-!define MUI_COMPONENTSPAGE_TEXT_COMPLIST    "Select wich components you want to install."
+!define MUI_COMPONENTSPAGE_TEXT_TOP         "Choose which components to install"
+!define MUI_COMPONENTSPAGE_TEXT_COMPLIST    "Select which components you want to install."
 
 !define MUI_FINISHPAGE_TITLE                "Thanks for installing my plugins!"
-!define MUI_FINISHPAGE_TEXT                 "Installation finished. $\n$\nEnjoy and send-me your comments on the .org!$\n$\n$\n joanpc."
+!define MUI_FINISHPAGE_TEXT                 "Installation finished. $\n$\nEnjoy the plugins and send-me your comments at http://x-plane.joanpc.com/contact!$\n$\n$\n joanpc."
 
 !define MUI_FINISHPAGE_NOREBOOTSUPPORT ; Force disable reboot
 
@@ -80,6 +83,9 @@ Var /GLOBAL SCRIPTS
 var /GLOBAL SOURCE
 var /GLOBAL NAME
 var /GLOBAL DOWNLOADS
+var /GLOBAL ARCH
+var /GLOBAL INSTALLER
+var /GLOBAL TRACKER_ACTION
 
 
 ; Check X-Plane folder
@@ -106,34 +112,27 @@ FunctionEnd
 Section "Python 2.7 (64bit)" python64
   SectionIn 1
   Call dirCheck
-  IfFileExists "$DOWNLOADS\python-2.7.12.amd64.msi" 0 +2
-  MessageBox MB_YESNO "A previously downloaded Python installer is avaliable on the hard disk. $\n\
-                       Do you want to use-it?" IDYES Install
-  inetc::get /NOCANCEL https://www.python.org/ftp/python/2.7.16/python-2.7.16.amd64.msi python-2.7.16.amd64.msi
-  Install:
-  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.16.amd64.msi" /passive'
+  StrCpy $ARCH ".amd64"
+  call pythonInstaller
 SectionEnd
 
 Section "Python 2.7 (32bit)" python32
   SectionIn 2
   Call dirCheck
-  IfFileExists "$DOWNLOADS\python-2.7.12.msi" 0 +2
-  MessageBox MB_YESNO "A previously downloaded Python installer is avaliable on the hard disk. $\n\
-                       Do you want to use-it?" IDYES Install
-  inetc::get /NOCANCEL https://www.python.org/ftp/python/2.7.16/python-2.7.16.msi python-2.7.16.msi
-  Install:
-  ExecWait '"msiexec" /i "$DOWNLOADS\python-2.7.16.msi" /passive'
+  StrCpy $ARCH ""
+  call pythonInstaller
 SectionEnd
 
 Section "Python interface - Sandy Barbour" pyinterface
   SectionIn 1 2
   Call dirCheck
-  inetc::get /NOCANCEL http://www.xpluginsdk.org/downloads/latest/Python27/PythonInterface.zip PythonInterface.zip
+  StrCpy $INSTALLER "PythonInterface.zip "
+  inetc::get /NOCANCEL http://www.xpluginsdk.org/downloads/latest/Python27/$INSTALLER  $INSTALLER
   ; Delete old versions
   Delete "$INSTDIR\Resources\plugins\PythonInterfaceWin27.xpl"
   Delete "$INSTDIR\Resources\plugins\PythonInterfaceWin26.xpl"
   Delete "$INSTDIR\Resources\plugins\PythonInterface.ini"
-  ZipDLL::extractall  $DOWNLOADS\PythonInterface.zip "$INSTDIR\Resources\plugins"
+  ZipDLL::extractall  $DOWNLOADS\$INSTALLER "$INSTDIR\Resources\plugins"
 
   ; Create shortcuts and url links
   CreateDirectory "$SMPROGRAMS\X-Plane Python Interface"
@@ -143,41 +142,45 @@ Section "Python interface - Sandy Barbour" pyinterface
   CreateShortCut "$SMPROGRAMS\X-Plane Python Interface\Net Installer.lnk" "$DOWNLOADS\PythonScriptsNetInstaller.exe"
 
   WriteINIStr "$SMPROGRAMS\X-Plane Python Interface\X-Plane Python Interface.URL" "InternetShortcut" "URL" "http://www.xpluginsdk.org/python_interface.htm"
-  WriteINIStr "$SMPROGRAMS\X-Plane Python Interface\Joanpc x-plane plugins.URL" "InternetShortcut" "URL" "http://x-plane.joanpc.com/"
+  WriteINIStr "$SMPROGRAMS\X-Plane Python Interface\Joanpc x-plane plugins.URL" "InternetShortcut" "URL" "https://x-plane.joanpc.com/"
   WriteINIStr "$SMPROGRAMS\X-Plane Python Interface\X-Plane SDK.URL" "InternetShortcut" "URL" "http://www.xsquawkbox.net/xpsdk/"
+
+  StrCpy $TRACKER_ACTION $INSTALLER
+  call tracker
 SectionEnd
 
 Section "OpenSceneryX" opensceneryx
   SectionIn 1 2
   Call dirCheck
-  IfFileExists "$DOWNLOADS\OpenSceneryX Installer\OpenSceneryX Installer.exe" 0 +2
+  StrCpy $INSTALLER "OpenSceneryX-Installer-Windows-${OPENSCENERYX_VERSION}.zip"
+  IfFileExists "$DOWNLOADS\$INSTALLER" 0 +2
   MessageBox MB_YESNO "A previously downloaded  OpenSceneryX installer is avaliable on the hard disk. $\n\
                        Do you want to use-it?" IDYES Install
-  inetc::get /NOCANCEL https://downloads.opensceneryx.com/OpenSceneryX-Installer-Windows-2.6.0.zip OpenSceneryX-Installer-Windows-2.6.0.zip
-  ZipDLL::extractall  $DOWNLOADS\OpenSceneryX-Installer-Windows-2.6.0.zip "$DOWNLOADS"
-  Delete '$DOWNLOADS\OpenSceneryX-Installer-Windows-2.6.0.zip'
+  inetc::get /NOCANCEL https://downloads.opensceneryx.com/$INSTALLER $INSTALLER
+
   Install:
+  RmDir /r '$DOWNLOADS\OpenSceneryX Installer'
+  ZipDLL::extractall  $DOWNLOADS\$INSTALLER "$DOWNLOADS"
   ExecWait '$DOWNLOADS\OpenSceneryX Installer\OpenSceneryX Installer.exe'
-  ; RmDir /r '$DOWNLOADS\OpenSceneryX Installer'
+
+  StrCpy $TRACKER_ACTION $INSTALLER
+  call tracker
 SectionEnd
 
 Section "XGFS NOAA Weather" xgfs
   SectionIn 1 2
-  StrCpy $SOURCE "https://github.com/joanpc/XplaneNoaaWeather/archive/master.zip"
   StrCpy $NAME "XplaneNoaaWeather"
   Call githubInstall
 SectionEnd
 
 Section "Ground Services" groundServices
   SectionIn 1 2
-  StrCpy $SOURCE "https://github.com/joanpc/GroundServices/archive/master.zipr"
   StrCpy $NAME "GroundServices"
   Call githubInstall
 SectionEnd
 
 Section "xJoyMap" xjoymap
   SectionIn 1 2
-  StrCpy $SOURCE "https://github.com/joanpc/xJoyMap/archive/master.zip"
   StrCpy $NAME "xJoyMap"
   Call githubInstall
 SectionEnd
@@ -187,6 +190,10 @@ Section "FastPlan" fastplan
   Call dirCheck
   inetc::get /NOCANCEL https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_FastPlan.py PI_FastPlan.py
   Rename /REBOOTOK "$DOWNLOADS\PI_FastPlan.py" "$SCRIPTS\PI_FastPlan.py"
+
+  StrCpy $TRACKER_ACTION "FastPlan"
+  call tracker
+
 SectionEnd
 
 Section "ScriptsUpdater" scriptsupdater
@@ -194,12 +201,12 @@ Section "ScriptsUpdater" scriptsupdater
   Call dirCheck
   inetc::get /NOCANCEL https://raw.github.com/joanpc/joan-s-x-plane-python-scripts/master/PI_ScriptsUpdater.py PI_ScriptsUpdater.py
   Rename /REBOOTOK "$DOWNLOADS\PI_ScriptsUpdater.py" "$SCRIPTS\PI_ScriptsUpdater.py"
+
+  StrCpy $TRACKER_ACTION "ScriptsUpdater"
+  call tracker
+
 SectionEnd
 
-Section "-Track" -tracker
-  SectionIn 1 2
-  inetc::get /NOCANCEL http://analytics.joanpc.com/piwik.php?action_name=win_install&idsite=4&rec=1&send_image=0&url=http://x-plane.joanpc.com/WindowsInstaller/install/${INSTALLER_VERSION}&
-SectionEnd
 
 Function .onSelChange
   ; 64 or 32 not both
@@ -214,8 +221,32 @@ Function .onSelChange
   SectionSetFlags ${python32} 0
   SectionSetFlags ${python64} 0
 
-
 FunctionEnd
+
+
+Function tracker
+  inetc::get /NOCANCEL /SILENT ${TRACKER_URL}&url=https://x-plane.joanpc.com/WindowsInstaller/install/$TRACKER_ACTION nul
+FunctionEnd
+
+
+Function pythonInstaller
+  ;
+  ; Downloads and installs python
+  ;
+  StrCpy $INSTALLER "python-${PYTHON_VERSION}$ARCH.msi"
+  StrCpy $SOURCE "https://www.python.org/ftp/python/${PYTHON_VERSION}/$INSTALLER"
+
+  IfFileExists "$DOWNLOADS\$INSTALLER" 0 +2
+  MessageBox MB_YESNO "A previously downloaded Python installer is avaliable on the hard disk. $\n\
+                       Do you want to use-it?" IDYES Install
+  inetc::get /NOCANCEL $SOURCE $INSTALLER
+  Install:
+  ExecWait '"msiexec" /i "$DOWNLOADS\$INSTALLER" /passive'
+
+  StrCpy $TRACKER_ACTION $INSTALLER
+  call tracker
+FunctionEnd
+
 
 Function githubInstall
   ;
@@ -223,6 +254,8 @@ Function githubInstall
   ;
 
   Call dirCheck
+
+  StrCpy $SOURCE "https://github.com/joanpc/$NAME/archive/master.zip"
   inetc::get /NOCANCEL $SOURCE $DOWNLOADS\$NAME.zip
 
   ZipDLL::extractall $DOWNLOADS\$NAME.zip "$DOWNLOADS"
@@ -242,6 +275,9 @@ Function githubInstall
 
   ; Delete directory
   RMDIR /r $DOWNLOADS\$NAME-master
+  ; track installation
+  StrCpy $TRACKER_ACTION $NAME
+  call tracker
 FunctionEnd
 
 Function dirCheck
@@ -276,7 +312,7 @@ FunctionEnd
   Provides correct upper wind levels and jet-streams over the globe and close-to real weather on remote locations without a close METAR report."
 
   LangString DESC_xjoymap ${LANG_ENGLISH} "xJoyMap is the simplest way to modify datarefs \
-  with your joystick and keystrokes. It also allows to create advanced combined commands."
+  using your joystick and keystrokes. It also allows you to create advanced combined commands."
 
   LangString DESC_fastplan ${LANG_ENGLISH} "Just enter your departure and destination airports and FastPlan will find a route using \
   rfinder.asalink.net and program your FMC."
