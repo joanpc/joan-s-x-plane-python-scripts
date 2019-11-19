@@ -9,7 +9,7 @@
 ; INETC:  https://nsis.sourceforge.io/Inetc_plug-in
 ; ZIPDLL: http://nsis.sourceforge.net/ZipDLL_plug-in
 
-; Copyright (C) 2012-2016  Joan Perez i Cauhe
+; Copyright (C) 2012-2019  Joan Perez i Cauhe
 ;
 ; ---
 ; This program is free software; you can redistribute it and/or
@@ -23,10 +23,11 @@
 ; GNU General Public License for more details.
 ; ---
 
-!define INSTALLER_VERSION "2.2"
+!define INSTALLER_VERSION "2.3"
 !define PYTHON_VERSION "2.7.16"
 !define OPENSCENERYX_VERSION "2.6.0"
 !define TRACKER_URL "https://analytics.joanpc.com/piwik.php?idsite=4&rec=1&send_image=0action_name=win_install&"
+!define env_hklm 'HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"'
 
 !include "LogicLib.nsh"
 !include "MUI2.nsh"
@@ -86,6 +87,8 @@ var /GLOBAL DOWNLOADS
 var /GLOBAL ARCH
 var /GLOBAL INSTALLER
 var /GLOBAL TRACKER_ACTION
+Var /GLOBAL SYSROOT
+Var /GLOBAL PATH
 
 
 ; Check X-Plane folder
@@ -103,6 +106,7 @@ Function .onInit
    StrCpy $INSTDIR "$PROGRAMFILES\X-Plane 9"
    IfFileExists "$PROGRAMFILES\X-Plane 10" 0 +2
    StrCpy $INSTDIR "$PROGRAMFILES\X-Plane 10"
+   StrCpy $SYSROOT "$WINDIR" 2
 FunctionEnd
 
 ; --------
@@ -236,12 +240,22 @@ Function pythonInstaller
   StrCpy $INSTALLER "python-${PYTHON_VERSION}$ARCH.msi"
   StrCpy $SOURCE "https://www.python.org/ftp/python/${PYTHON_VERSION}/$INSTALLER"
 
+  StrCpy $PATH "$SYSROOT\Python27"
+
   IfFileExists "$DOWNLOADS\$INSTALLER" 0 +2
   MessageBox MB_YESNO "A previously downloaded Python installer is avaliable on the hard disk. $\n\
                        Do you want to use-it?" IDYES Install
   inetc::get /NOCANCEL $SOURCE $INSTALLER
+
   Install:
+  ; Force Uninstall and remove previous python installations
+  ExecWait '"msiexec" /uninstall "$DOWNLOADS\$INSTALLER" /passive'
+  IfFileExists $PATH\*.* 0 +2
+  RMDIR /r $PATH
   ExecWait '"msiexec" /i "$DOWNLOADS\$INSTALLER" /passive'
+
+  ;WriteRegExpandStr ${env_hklm} "PYTHONPATH" "$PYTHONPATH"
+  ;SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
 
   StrCpy $TRACKER_ACTION $INSTALLER
   call tracker
