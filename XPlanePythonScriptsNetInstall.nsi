@@ -23,8 +23,8 @@
 ; GNU General Public License for more details.
 ; ---
 
-!define INSTALLER_VERSION "2.3"
-!define PYTHON_VERSION "2.7.16"
+!define INSTALLER_VERSION "2.4"
+!define PYTHON_VERSION "2.7.17"
 !define OPENSCENERYX_VERSION "2.6.0"
 !define TRACKER_URL "https://analytics.joanpc.com/piwik.php?idsite=4&rec=1&send_image=0action_name=win_install&"
 !define env_hklm 'HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"'
