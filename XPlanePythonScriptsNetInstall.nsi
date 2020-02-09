@@ -23,7 +23,7 @@
 ; GNU General Public License for more details.
 ; ---
 
-!define INSTALLER_VERSION "2.4"
+!define INSTALLER_VERSION "2.5"
 !define PYTHON_VERSION "2.7.17"
 !define OPENSCENERYX_VERSION "2.6.0"
 !define TRACKER_URL "https://analytics.joanpc.com/piwik.php?idsite=4&rec=1&send_image=0action_name=win_install&"
@@ -256,6 +256,14 @@ Function pythonInstaller
 
   ;WriteRegExpandStr ${env_hklm} "PYTHONPATH" "$PYTHONPATH"
   ;SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
+
+  ; Add the python folder to the %PATH% env
+  nsExec::Exec 'echo %PATH% | find "$SYSROOT\Python27"'
+  Pop $0   ; gets result code
+
+  ${If} $0 = 0
+    nsExec::Exec 'setx PATH %PATH%;$SYSROOT\Python27'
+  ${EndIf}
 
   StrCpy $TRACKER_ACTION $INSTALLER
   call tracker
