@@ -14,11 +14,12 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 '''
 
-VERSION = '1.2'
+VERSION = '1.3'
 UPDATE_URL='http://x-plane.joanpc.com/plugins/updater_json/' + VERSION
 
 import json
 import urllib
+import ssl
 import tempfile
 import os
 from zipfile import ZipFile
@@ -82,14 +83,16 @@ class XPScriptsUpdater:
             os.mkdir(dpath)
         
         if update['update_type'] == 'direct' and update['update_filename']:
-            urllib.urlretrieve(update['update_url'], dpath + '/'  +  update['update_filename'])
+            urllib.urlretrieve(update['update_url'], dpath + '/'  +  update['update_filename'],
+                context=ssl._create_unverified_context())
+
             copy(dpath + '/'  +  update['update_filename'], installpath + '/'  +  update['update_filename'])            
             print dpath + '/'  +  update['update_filename'], installpath + '/'  +  update['update_filename']
             
         elif update['update_type'] == 'zip':
             zipfile = dpath + '/._xpjpcUPDATE.zip'
             # Download update
-            urllib.urlretrieve(update['update_url'], zipfile)
+            urllib.urlretrieve(update['update_url'], zipfile, context=ssl._create_unverified_context())
             zip = ZipFile(zipfile, 'r')
             
             # Check zip file
@@ -109,7 +112,7 @@ class XPScriptsUpdater:
         else:
             scripts = self.listScripts()
         
-        res = urllib.urlopen(UPDATE_URL)
+        res = urllib.urlopen(UPDATE_URL, context=ssl._create_unverified_context())
         #res = open('./versions.json', 'r')
         versions = json.load(res)
         updates = {}
